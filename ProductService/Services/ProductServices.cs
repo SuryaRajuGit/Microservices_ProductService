@@ -188,10 +188,24 @@ namespace ProductService.Services
             return _productRepository.SaveCatalog(catalogs);
         }
 
-        public int? GetProductQuantity(Guid id,Guid categoryId)
+        public bool GetProductQuantity(Guid id,Guid categoryId)
         {
             return _productRepository.GetProductCount(id, categoryId);
-       
         }
+
+        public ErrorDTO IsProductExist(Guid id)
+        {
+            var product = _productRepository.IsProductExist(id);
+            if(!product)
+            {
+                return new ErrorDTO {type="NoFound",description="Product with id not found" };
+            }
+            return null;
+        }
+        public Product Product(Guid id)
+        {
+            return _productRepository.Product(id);
+        }
+        
     }
 }

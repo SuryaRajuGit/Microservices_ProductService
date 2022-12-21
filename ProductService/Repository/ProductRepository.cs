@@ -123,14 +123,26 @@ namespace ProductService.Repository
             return catalogs.Id;
         }
 
-        public int? GetProductCount(Guid id,Guid categoryId)
+        public bool GetProductCount(Guid id,Guid categoryId)
         {
-            Product product = _productContext.Category.Where(find => find.Id == categoryId).Select(term => term.Products.Where(fid => fid.Id == id).FirstOrDefault()).FirstOrDefault();
-            if(product == null)
+            //  Product product = _productContext.Category.Where(find => find.Id == categoryId).Select(term => term.Products.Where(fid => fid.Id == id).FirstOrDefault()).FirstOrDefault();
+            foreach (Category item in _productContext.Category.Include(term => term.Products).Where(s => s.Id == categoryId))
             {
-                return null;
+                return item.Products.Any(f => f.Id == id);
             }
-            return product.Quantity;
+            return false;
         }
+
+        public bool IsProductExist(Guid id)
+        {
+            return _productContext.Product.Any(find => find.Id == id);
+        }
+
+        public Product Product(Guid id)
+        {
+            return _productContext.Product.First(find => find.Id == id);
+        }
+
+        
     }
 }

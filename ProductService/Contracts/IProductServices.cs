@@ -30,6 +30,15 @@ namespace ProductService.Contracts
 
         public Guid SaveCatalog(CatalogDTO catalogDTO);
 
-        public int? GetProductQuantity(Guid id,Guid categoryId);
+        public bool GetProductQuantity(Guid id,Guid categoryId);
+
+        public ErrorDTO IsProductExist(Guid id);
+
+        public Product Product(Guid id);
+
+       
+
+
+
     }
 }

@@ -27,6 +27,12 @@ namespace ProductService.Contracts
 
         public Guid SaveCatalog(Catalog catalogs);
 
-        public int? GetProductCount(Guid id,Guid categoryId);
+        public bool GetProductCount(Guid id,Guid categoryId);
+
+        public bool IsProductExist(Guid id);
+
+        public Product Product(Guid id);
+
+        
     }
 }
