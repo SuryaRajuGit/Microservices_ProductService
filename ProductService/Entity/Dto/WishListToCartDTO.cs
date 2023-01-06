@@ -7,15 +7,15 @@ using System.Threading.Tasks;
 
 namespace ProductService.Entity.Dto
 {
-    public class ProductDTO
+    public class WishListToCartDTO
     {
         [Required]
-        [JsonProperty("category_id")]
-        public Guid CategoryId { get; set; }
+        [JsonProperty("wishlist_id")]
+        public Guid WishListId { get; set; }
 
         [Required]
-        [JsonProperty("product")]
-        public ICollection<CategoryDTO> Product { get; set; }
+        [JsonProperty("product_id")]
+        public Guid ProductId { get; set; } 
 
     }
 }

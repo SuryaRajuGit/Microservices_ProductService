@@ -38,7 +38,10 @@ namespace ProductService
             services.AddTransient<IProductServices, ProductServices>(); 
             services.AddTransient<IProductRepository, ProductRepository>();
             // services.AddAutoMapper(typeof(Startup));
-
+            services.AddControllersWithViews()
+            .AddNewtonsoftJson(options =>
+            options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
+);
             services.AddAuthentication(option =>
             {
                 option.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

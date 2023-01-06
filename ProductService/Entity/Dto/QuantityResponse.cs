@@ -5,11 +5,12 @@ using System.Threading.Tasks;
 
 namespace ProductService.Entity.Dto
 {
-    public class CartTOWishList
+    public class QuantityResponse
     {
-        public Guid WishListId { get; set; }
+        
+        public string type { get; set; }
 
-        public Guid ProductId { get; set; } 
+        public string description { get; set; }
 
     }
 }
