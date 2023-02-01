@@ -1,1 +1,2 @@
-﻿GroceriesVegetables,Potato,Fresh potatos,10,10,true,null
+﻿catalog_name,id,category_name,id,product_name,id,description,price,quantity,visibility,asset
+Groceries,56ef95d7-2096-4a88-b0f7-82f4dbb6cc35,Vegetables,4944226f-36a7-445f-a9e5-d5c2ba1f525f,potatos,2a52169a-e58f-42e8-bc0e-4603c361c589,Fresh potatos,10,10,true,null

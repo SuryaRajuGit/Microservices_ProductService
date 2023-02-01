@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace ProductService.Entity.Dto
 {
     public class CartResponseDTO
-    {
+    { 
         [JsonProperty("id")]
         public Guid Id { get; set; }
 

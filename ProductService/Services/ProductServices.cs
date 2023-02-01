@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Newtonsoft.Json;
 using ProductService.Contracts;
 using ProductService.Entity.Dto;
@@ -6,18 +9,24 @@ using ProductService.Entity.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace ProductService.Services
 {
     public class ProductServices : IProductServices
     {
+        private readonly IHttpContextAccessor _context;
         private readonly IProductRepository _productRepository;
-
-        public ProductServices(IProductRepository productRepository)
+        private readonly IMapper _mapper;
+        public ProductServices(IProductRepository productRepository, IMapper mapper, IHttpContextAccessor context)
         {
             _productRepository = productRepository;
+            _mapper = mapper;
+            _context = context;
         }
+        ///<summary>
+        /// Checks received data
+        ///</summary>
+        ///<return>ErrorDTO</return>
         public ErrorDTO ModelStateInvalid(ModelStateDictionary ModelState)
         {
             return new ErrorDTO
@@ -26,43 +35,53 @@ namespace ProductService.Services
                 description = ModelState.Values.Select(src => src.Errors.Select(src => src.ErrorMessage).FirstOrDefault()).FirstOrDefault()
             };
         }
+
+        ///<summary>
+        /// Checks if the product exists
+        ///</summary>
+        ///<return>ErrorDTO</return>
         public ErrorDTO IsProductExists(IEnumerable<string> name)
         {
-            var l = name.ToList();
-            string names = _productRepository.IsProductExists(l);
+            List<string> nameList = name.ToList();
+            string names = _productRepository.IsProductExists(nameList);
             if (names != null)
             {
-                return new ErrorDTO { type = "Conflict", description = names + " Product already exists" };
+                return new ErrorDTO { type = "Product", description = names + "Product already exists" };
             }
             return null;
         }
+        ///<summary>
+        /// Checks if the catalog id exists
+        ///</summary>
+        ///<return>ErrorDTO</return>
         public ErrorDTO IsCatelogIdexists(ProductDTO product)
         {
             Guid? id = _productRepository.IsCatelogIdexists(product);
             if (id != null)
             {
-                return new ErrorDTO { type = "NotFound", description = id + " not found" };
+                return new ErrorDTO { type = "Catalog", description ="Catalog with id not found" };
             }
             return null;
         }
-
+        ///<summary>
+        /// Saves Product 
+        ///</summary>
+        ///<return>List<SaveProductResponse></return>
         public List<SaveProductResponse> SaveProduct(ProductDTO productDTO)
         {
+            Guid userId = Guid.Parse(_context.HttpContext.User.Claims.First(i => i.Type == "Id").Value);
             List<Product> products = new List<Product>();
             List<SaveProductResponse> response = new List<SaveProductResponse>();
-            foreach (var item in productDTO.Product)
+            foreach (CategoryDTO item in productDTO.Product)
             {
-                Product product = new Product();
+                item.Quantity = item.Quantity == 0 ? 1 : item.Quantity;
+                Product product1 = _mapper.Map<Product>(item);
                 Guid id = Guid.NewGuid();
-                product.Id = id;
-                product.Asset = null;
-                product.CategoryId = productDTO.CategoryId;
-                product.Description = item.Description;
-                product.Name = item.Name;
-                product.Price = item.Price;
-                product.Quantity = item.Quantity;
-                product.Visibility = item.Visibility;
-                products.Add(product);
+                product1.Id = id;
+                product1.CategoryId = productDTO.CategoryId;
+                product1.CreatedDate = DateTime.Now;
+                product1.CreatedBy = userId;
+                products.Add(product1);
                 SaveProductResponse saveProductResponse = new SaveProductResponse();
                 saveProductResponse.Id = id;
                 saveProductResponse.Name = item.Name;
@@ -71,12 +90,16 @@ namespace ProductService.Services
             _productRepository.SaveProduct(products);
             return response;
         }
+        ///<summary>
+        /// Checks if the product exits or not
+        ///</summary>
+        ///<return>ErrorDTO</return>
         public ErrorDTO IsProductExists(Guid id, Guid categoryId)
         {
             Tuple<string, Guid> isProductExists = _productRepository.IsProductExists(id, categoryId);
             if (isProductExists.Item1 != string.Empty)
             {
-                if (isProductExists.Item1 == "categoryId")
+                if (isProductExists.Item1 == Constants.CategoryId)
                 {
                     return new ErrorDTO { type = "Category", description = "categoryId " + isProductExists.Item2 + " not found" };
                 }
@@ -88,66 +111,75 @@ namespace ProductService.Services
             return null;
         }
 
+        ///<summary>
+        /// Gets product details
+        ///</summary>
+        ///<return>ProductResponseDTO</return>
         public ProductResponseDTO GetProduct(Guid id, Guid categoryId)
         {
             Product product = _productRepository.GetProduct(id, categoryId);
-            ProductResponseDTO productResponseDTO1 = new ProductResponseDTO()
-            {
-                Id=product.Id,
-                Name = product.Name,
-                Description = product.Description,
-                Price = product.Price,
-                Quantity = product.Quantity,
-                Asset=product.Asset
-            };
-            return productResponseDTO1;
+            product.Category = null;
+            //  product.CategoryId = null;
+            ProductResponseDTO productResponseDTO = new ProductResponseDTO();
+
+            ProductResponseDTO product1 = _mapper.Map<ProductResponseDTO>(product);
+            product1.Asset = null;
+
+            return product1;
         }
 
+        ///<summary>
+        /// Updates product details
+        ///</summary>
+        ///<return>ErrorDTO</return>
         public ErrorDTO UpdateProduct(UpdateProductDTO product)
         {
-            Product product1 = new Product
-            {
-                Price = product.Price,
-                Name = product.Name,
-                Description = product.Description,
-                Quantity = product.Quantity,
-                Visibility = product.Visibility,
-                CategoryId = product.CategoryId,
-                Id = product.ProductId
-            };
-            var c = _productRepository.UpdateProduct(product1, product.CategoryId);
-            if (c)
+        
+            Product product2 = _mapper.Map<Product>(product);
+            product2.Asset = null;
+            bool isProductExist = _productRepository.UpdateProduct(product, product.CategoryId);
+            if (isProductExist)
             {
                 return null;
             }
             return new ErrorDTO { type = "Product", description = "Product Id not found" };
         }
 
+        ///<summary>
+        /// Check product name exists or not
+        ///</summary>
+        ///<return>ErrorDTO</return>
         public ErrorDTO IsProductNameExists(UpdateProductDTO product)
         {
-            var v = _productRepository.IsProductNameExists(product);
-            if (v)
+            bool isProductExist = _productRepository.IsProductNameExists(product);
+            if (isProductExist)
             {
                 return new ErrorDTO { type = "Product", description = "Product with name already exists" };
             }
             return null;
         }
-
+        ///<summary>
+        /// Checks catalog name exists or not
+        ///</summary>
+        ///<return>ErrorDTO</return>
         public ErrorDTO IsCatalogNameExists(CatalogDTO catalogDTO)
         {
-            //
-            var c = _productRepository.IsExists(catalogDTO);
-            switch (c.Item1)
+            Tuple<string,string> response = _productRepository.IsExists(catalogDTO);
+            switch (response.Item1)
             {
-                case "catalog":
-                    return new ErrorDTO { type = "Catalog", description = $"Catalog with name {c.Item2} already exists" };
-                case "category":
-                    return new ErrorDTO { type = "Category", description = $"Category with name {c.Item2} already exists" };
+                case Constants.Catalog:
+                    return new ErrorDTO { type = "Catalog", description = $"Catalog with name {response.Item2} already exists" };
+                case Constants.Category:
+                    return new ErrorDTO { type = "Category", description = $"Category with name {response.Item2} already exists" };
                 default:
                     return null;
             }
         }
-        public CatalogResponseDTO SaveCatalog(CatalogDTO catalogDTO)
+        ///<summary>
+        /// Saves catalog details
+        ///</summary>
+        ///<return>Guid</return>
+        public Guid SaveCatalog(CatalogDTO catalogDTO)
         {
             Guid catalogId = Guid.NewGuid();
             Catalog catalogs = new Catalog()
@@ -160,7 +192,7 @@ namespace ProductService.Services
                      CatalogId = catalogId,
                      Name = term.Name,
                      Products = term.Products.Select(item =>
-                        new Product()
+                        new Product() 
                         {
                             Id = Guid.NewGuid(),
                             Price = item.Price,
@@ -169,121 +201,120 @@ namespace ProductService.Services
                             Visibility = item.Visibility,
                             Asset = item.Asset,
                             Name = item.Name,
-
                         }
-
                         ).ToList()
                  }).ToList(),
                 Name = catalogDTO.CatalogName
             };
-            CatalogResponseDTO catalogResponseDTO = new CatalogResponseDTO();
-            catalogResponseDTO.CatalogName = catalogDTO.CatalogName;
-            catalogResponseDTO.CatalogId = catalogId;
-            catalogResponseDTO.Category = new List<CatelogCategoryDTO>();
-            foreach (var item in catalogs.Category)
-            {
-                List<CatalogProductResponseDTO> catalogProductResponseDTO = new List<CatalogProductResponseDTO>();
-                foreach (var each in item.Products)
-                {
-                    CatalogProductResponseDTO catalogProductResponseDTO1 = new CatalogProductResponseDTO()
-                    {
-                        Id = each.Id,
-                        Name = each.Name,
-                    };
-                    catalogProductResponseDTO.Add(catalogProductResponseDTO1);
-                };
-                CatelogCategoryDTO catelogCategoryDTO = new CatelogCategoryDTO()
-                {
-                    CategoryName = item.Name,
-                    CategoryId = item.Id,
-                    Product = catalogProductResponseDTO,
-                };
-                catalogResponseDTO.Category.Add(catelogCategoryDTO);
-            };
-            _productRepository.SaveCatalog(catalogs);
-            return catalogResponseDTO;
+            _productRepository.SaveCatalog(catalogs);   
+            return catalogId;
         }
+        ///<summary>
+        /// Checks product details
+        ///</summary>
+        ///<return>string</return>
         public string CheckProducts(List<Guid> productIds)
         {
-            foreach (var item in productIds)
+            foreach (Guid item in productIds)
             {
-                var i = _productRepository.CheckProduct(item);
-                if(!i)
+                bool isProductExist = _productRepository.CheckProduct(item);
+                if(!isProductExist)
                 {
                     return JsonConvert.SerializeObject(item);
                 }
             }
             return null;
         }
+        ///<summary>
+        /// Gets product quantity 
+        ///</summary>
+        ///<return>string</return>
         public string GetProductQuantity(Guid id, Guid categoryId)
         {
             Tuple<string, string> response = _productRepository.GetProductCount(id, categoryId);
             switch (response.Item1)
             {
-                case "category":
+                case Constants.Category:
                     return JsonConvert.SerializeObject(new QuantityResponse { type = "category", description = $"Category id {response.Item2}  not found" });
-                case "product":
+                case Constants.Product:
                     return JsonConvert.SerializeObject(new QuantityResponse { type = "product", description = $"product id {response.Item2} not found" });
                 default:
                     return JsonConvert.SerializeObject(new QuantityResponse() { type = response.Item1, description = response.Item2 });
             }
         }
+        ///<summary>
+        /// Updates purchased product details in the inventory
+        ///</summary>
+        ///<return>bool</return>
         public bool UpdatePurchaseProduct(ProductToCartDTO updatePurchasedProduct)
         {
             return _productRepository.UpdateProductQuantity(updatePurchasedProduct);
         }
-
-
-
+        ///<summary>
+        /// Checks product exist in the database or not
+        ///</summary>
+        ///<return>ErrorDTO</return>
         public ErrorDTO IsProductExist(Guid id)
         {
-            var product = _productRepository.IsProductExist(id);
-            if (!product)
+            bool isProductExist = _productRepository.IsProductExist(id);
+            if (!isProductExist)
             {
                 return new ErrorDTO { type = "NoFound", description = "Product with id not found" };
             }
             return null;
         }
+
+        ///<summary>
+        /// Gets Product Details
+        ///</summary>
+        ///<return>Product</return>
         public Product Product(Guid id)
         {
             return _productRepository.Product(id);
         }
 
+        ///<summary>
+        /// Updates purchesed product details in the inventory
+        ///</summary>
+        ///<return>bool</return>
         public ErrorDTO IsCategoryIdExist(Guid catalogId, Guid categoryId, string name)
         {
-            if (name != "")
+            if (name != null)
             {
                 return null;
             }
             Tuple<string, string> isCategoryIdExist = _productRepository.IsCategoryExists(catalogId, categoryId);
             switch (isCategoryIdExist.Item1)
             {
-                case "catalog":
-                    return new ErrorDTO { type = "Catalog", description = $"Catalog with name {isCategoryIdExist.Item2} already exists" };
-                case "category":
-                    return new ErrorDTO { type = "Category", description = $"Category with name {isCategoryIdExist.Item2} already exists" };
+                case Constants.Catalog:
+                    return new ErrorDTO { type = "Catalog", description = $"Catalog {isCategoryIdExist.Item2} id not found" };
+                case Constants.Category:
+                    return new ErrorDTO { type = "Category", description = $"Category {isCategoryIdExist.Item2}id not found" };
                 default:
                     return null;
             }
         }
+
+        ///<summary>
+        /// Updates purchesed product details in the inventory
+        ///</summary>
+        ///<return>bool</return>
         public List<ProductResponseDTO> ProductResponse(List<Product> products)
         {
             List<ProductResponseDTO> productList = new List<ProductResponseDTO>();
-            foreach (var item in products)
-            {
-                ProductResponseDTO productDTO = new ProductResponseDTO()
-                {
-                    Id = item.Id,
-                    Name = item.Name,
-                    Description = item.Description,
-                    Asset = item.Asset,
-                    Price = item.Price,
-                    Quantity = item.Quantity
-                };
-                productList.Add(productDTO);
+            foreach (Product item in products)
+            { 
+                ProductResponseDTO product2 = _mapper.Map<ProductResponseDTO>(item);
+                product2.Asset = null;
+            
+            productList.Add(product2);
             }
             return productList;
         }
+        ///<summary>
+        /// Gets List of products
+        ///</summary>
+        ///<return>List<ProductResponseDTO></return>
         public List<ProductResponseDTO> GetProductList(Guid catalogId, Guid categoryId, int size, int pageNo , string sortBy , string sortOrder, string name)
         {
             if (name != null)
@@ -303,159 +334,192 @@ namespace ProductService.Services
             }
             if(sortOrder == Constants.DSC)
             {
-                var x =  sortList = sortBy == Constants.Name ? products1.OrderBy(term => term.Name).ToList() : products1.OrderBy(term => term.Price).ToList();
+                List<Product> productList =  sortList = sortBy == Constants.Name ? products1.OrderBy(term => term.Name).ToList() : products1.OrderBy(term => term.Price).ToList();
                 if(sortBy == Constants.Name)
                 {
-                    var xx =  products1.OrderByDescending(term => term.Name).ToList();
-                    products1 = x;
+                    List<Product> productsList =  products1.OrderByDescending(term => term.Name).ToList();
+                    products1 = productsList;
                 }
                 else
                 {
-                    var y = products1.OrderByDescending(term => term.Price).ToList();
-                    products1 = y;
+                    List<Product> productsList = products1.OrderByDescending(term => term.Price).ToList();
+                    products1 = productsList;
                 }
             }
-            
             sortList = products1;
-            var r =  ProductResponse(sortList);
-            return r; 
+            List<ProductResponseDTO> response =  ProductResponse(sortList);
+            return response; 
         }
+        ///<summary>
+        /// Gets the product price
+        ///</summary>
+        ///<return>float</return>
         public float GetProductPrice(Guid id)
         {
             return _productRepository.GetProductPrice(id);
         }
 
+        ///<summary>
+        /// Delets Product 
+        ///</summary>
+        ///<return>ErrorDTO</return>
         public ErrorDTO DeleteProduct(Guid id)
         {
-            var c = _productRepository.DeleteProduct(id);
-            if (c == false)
+            bool isProductExist = _productRepository.DeleteProduct(id);
+            if (isProductExist == false)
             {
                 return new ErrorDTO() { type = "Product", description = "Product with id not found" };
             }
             return null;
         }
 
+        ///<summary>
+        /// Delets Product 
+        ///</summary>
+        ///<return>ErrorDTO</return>
         public ErrorDTO ValidateFields(Guid catalogId, Guid categoryId, string name)
         {
-            if (name == null && catalogId == Guid.Empty && categoryId == Guid.Empty)
+            if (name == null && (catalogId == Guid.Empty || categoryId == Guid.Empty)) 
             {
                 return new ErrorDTO() { type = "Bad request", description = "catalog id and category id should not be empty" };
             }
             return null;
-
         }
+
+        ///<summary>
+        /// Delets Product 
+        ///</summary>
+        ///<return>ErrorDTO</return>
         public string CheckProductQunatity(List<ProductQunatity> productQunatities)
         {
-            foreach (var item in productQunatities)
+            foreach (ProductQunatity item in productQunatities)
             {
-                var t = _productRepository.GetProductQunatity(item.Id);
-                if(t == -1)
+                int productCount = _productRepository.GetProductQunatity(item.Id);
+                if(productCount == -1)
                 {
                     return JsonConvert.SerializeObject(new ProductQunatity() { Id = item.Id, Quantity = -1 });
                 }
-                else if (t < item.Quantity)
+                else if (productCount < item.Quantity)
                 {
-                    return JsonConvert.SerializeObject(new ProductQunatity() {Id=item.Id,Quantity=t });
+                    return JsonConvert.SerializeObject(new ProductQunatity() {Id=item.Id,Quantity= productCount });
                 }
             }
             return null;
         }
+        ///<summary>
+        /// Gets Prices of products
+        ///</summary>
+        ///<return>string</return>
         public string CartProductsPrice(List<ProductQunatity> products)
         {
             List<ProductPrice> productPrices = new List<ProductPrice>();
-            foreach (var item in products)
+            foreach (ProductQunatity item in products)
             {
-                int i = item.Quantity;
-                var y = _productRepository.GetProductsPrice(item.Id,item.Quantity);
-                productPrices.Add(y);
+                ProductPrice productPrice = _productRepository.GetProductsPrice(item.Id,item.Quantity);
+                productPrices.Add(productPrice);
             }
             return JsonConvert.SerializeObject(productPrices);
         }
+
+        ///<summary>
+        /// Gets details of products in cart
+        ///</summary>
+        ///<return>List<CartResponseDTO></return>
         public List<CartResponseDTO> GetCartProductDetails(List<ProductQunatity> products)
         {
-            List<Product> g = _productRepository.GetCartProductDetails(products);
+            List<Product> productList = _productRepository.GetCartProductDetails(products);
             List<CartResponseDTO> response = new List<CartResponseDTO>();
-            foreach (var item in g)
+            foreach (Product item in productList)
             {
                 if(item.Name != null || item.Visibility )
                 {
-                    CartResponseDTO product = new CartResponseDTO
-                    {
-                        Id = item.Id,
-                        Asset = item.Asset,
-                        Name = item.Name,
-                        Description=item.Description,
-                        Price=item.Price,
-                        Quantity=item.Quantity 
-                    };
-                    response.Add(product);
+                    CartResponseDTO cartResponseDTO = _mapper.Map<CartResponseDTO>(item);
+                    cartResponseDTO.Asset = null;
+                    response.Add(cartResponseDTO);
                 }
                 else if(item.Name !=null &&  !item.Visibility)
                 {
-                    CartResponseDTO product = new CartResponseDTO
-                    {
-                        Id = item.Id,
-                        Asset = item.Asset,
-                        Name = item.Name,
-                        Description = item.Description,
-                        Price = item.Price,
-                        Quantity = 0
-                    };
-                    response.Add(product);
+                    CartResponseDTO cartResponseDTO = _mapper.Map<CartResponseDTO>(item);
+                    cartResponseDTO.Asset = null;
+                    cartResponseDTO.Quantity = 0;
+                    response.Add(cartResponseDTO);
                 }
                 else
                 {
-                    CartResponseDTO product = new CartResponseDTO
-                    {
-                        Id = item.Id,
-                        Asset = item.Asset,
-                        Name = item.Name,
-                        Description = item.Description,
-                        Price = item.Price,
-                        Quantity = -1
-
-                    };
-                    response.Add(product);
+                    CartResponseDTO cartResponseDTO = _mapper.Map<CartResponseDTO>(item);
+                    cartResponseDTO.Asset = null;
+                    cartResponseDTO.Quantity = -1;
+                    response.Add(cartResponseDTO);
                 }
             }
             return response;
         }
+        ///<summary>
+        /// Gets wishlist product details
+        ///</summary>
+        ///<return>List<CartResponseDTO></return>
         public List<CartResponseDTO> GetWishListProductDetails(List<Guid> productIds)
         {
-            var x = _productRepository.GetWishListProductDetails(productIds);
+            List<Product> productList = _productRepository.GetWishListProductDetails(productIds);
             List<CartResponseDTO> productDetails = new List<CartResponseDTO>();
-            foreach (var item in x)
+            foreach (Product item in productList)
             {
-                CartResponseDTO cartResponseDTO = new CartResponseDTO();
+                
                 if (item.Name == null || !item.Visibility)
                 {
-                    
-                    cartResponseDTO.Id = item.Id;
-                    cartResponseDTO.Name = null;
+                    CartResponseDTO cart = new CartResponseDTO();
+                    cart.Id = item.Id;
+                    cart.Name = null;
+                    productDetails.Add(cart);
                 }
                 else if((item.Quantity == 0 || item.Quantity < 0) && item.Visibility)
                 {
-                   
-                    cartResponseDTO.Id = item.Id;
-                    cartResponseDTO.Name = item.Name;
-                    cartResponseDTO.Price = item.Price;
-                    cartResponseDTO.Description = item.Description;
-                    cartResponseDTO.Asset = item.Asset;
-                    cartResponseDTO.Quantity = -1;
+                    CartResponseDTO cart = _mapper.Map<CartResponseDTO>(item);
+                    cart.Quantity = -1;
+                    cart.Asset = null;
+                    productDetails.Add(cart);
                 }
                 else
                 {
-                    cartResponseDTO.Id = item.Id;
-                    cartResponseDTO.Name = item.Name;
-                    cartResponseDTO.Price = item.Price;
-                    cartResponseDTO.Description = item.Description;
-                    cartResponseDTO.Asset = item.Asset;
-                    cartResponseDTO.Quantity = 1;
-
+                    CartResponseDTO cart = _mapper.Map<CartResponseDTO>(item);
+                    cart.Quantity = 1;
+                    cart.Asset = null;
+                    productDetails.Add(cart);
                 }
-                productDetails.Add(cartResponseDTO);
+                
             }
             return productDetails;
         }
+        ///<summary>
+        /// Gets catalog details
+        ///</summary>
+        ///<return>List<GetCatalogResponseDTO></return>
+        public List<GetCatalogResponseDTO> GetCatalog(Guid id)
+        {
+            Catalog catalog = _productRepository.GetCatalogDetails(id); 
+            if(catalog == null)
+            {
+                return null;
+            }
+            List<GetCatalogResponseDTO> getCatalogResponseDTOs = new List<GetCatalogResponseDTO>();
+            foreach (Category item in catalog.Category)
+            {
+                GetCatalogResponseDTO getCatalogResponseDTO = new GetCatalogResponseDTO()
+                {
+                    CategoryId = item.Id,
+                    CategoryName=item.Name,
+                    Product = new List<ProductResponseDTO>()
+                };
+                foreach (Product each in item.Products)
+                {
+                    ProductResponseDTO productResponseDTO1 = _mapper.Map<ProductResponseDTO>(each);
+                    productResponseDTO1.Asset = null;
+                    getCatalogResponseDTO.Product.Add(productResponseDTO1);
+                }
+                getCatalogResponseDTOs.Add(getCatalogResponseDTO);
+            }
+            return getCatalogResponseDTOs;
+        }
     }
+    
 }

@@ -14,30 +14,30 @@ namespace ProductService.Entity.Dto
         public Guid CategoryId { get; set; }
 
         [Required]
-        [JsonProperty("product_id")]
-        public Guid ProductId { get; set; }
+        [JsonProperty("id")]
+        public Guid Id { get; set; }
 
-        [Required]
+
         [JsonProperty("name")]
         public string Name { get; set; }
 
-        [Required]
+   
         [JsonProperty("description")]
         public string Description { get; set; }
 
         [JsonProperty("asset")]
         public byte[] Asset { get; set; }
 
-        [Required]
-        [JsonProperty("quantity")]
-        public int Quantity { get; set; }
-
-        [Required]
-        [JsonProperty("price")]
+        [RegularExpression(@"^[1-9][0-9]*$")]
+        [JsonProperty(PropertyName = "price")]
         public float Price { get; set; }
 
-        [Required]
+        [RegularExpression(@"^[0-9]+$")]
+        [JsonProperty("quantity")]
+        public int? Quantity { get; set; }
+
+    
         [JsonProperty("visibility")]
-        public bool Visibility { get; set; }
+        public bool? Visibility { get; set; }
     }
 }

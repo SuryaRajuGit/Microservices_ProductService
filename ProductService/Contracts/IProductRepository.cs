@@ -19,7 +19,7 @@ namespace ProductService.Contracts
 
         public Product GetProduct(Guid id,Guid categoryId);
 
-        public bool UpdateProduct(Product product, Guid CategoryId);
+        public bool UpdateProduct(UpdateProductDTO product, Guid CategoryId);
 
         public bool IsProductNameExists(UpdateProductDTO product);
 
@@ -56,5 +56,7 @@ namespace ProductService.Contracts
         public List<Product> GetCartProductDetails(List<ProductQunatity> products);
 
         public List<Product> GetWishListProductDetails(List<Guid> productIds);
+
+        public Catalog GetCatalogDetails(Guid id);
     }
 }

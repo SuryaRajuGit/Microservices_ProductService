@@ -13,7 +13,15 @@ namespace ProductService.Entity.Dto
 
         public const string Price = "Price";
 
+        public const string Bearer = "Bearer";
 
+        public const string CategoryId = "categoryId";
+
+        public const string Catalog = "catalog";
+
+        public const string Category = "category";
+
+        public const string Product = "product";
 
     }
 }

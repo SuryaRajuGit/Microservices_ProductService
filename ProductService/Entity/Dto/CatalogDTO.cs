@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ProductService.Entity.Dto
 {
-    public class CatalogDTO
+    public class CatalogDTO 
     {
         [Required]
         [JsonProperty("catalog_name")]

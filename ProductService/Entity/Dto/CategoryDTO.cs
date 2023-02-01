@@ -10,14 +10,14 @@ namespace ProductService.Entity.Dto
     public class CategoryDTO
     {
         [Required]
-        [JsonProperty("price")]
+        [RegularExpression(@"^[1-9][0-9]*$")]
+        [JsonProperty(PropertyName = "price")]
         public float Price { get; set; }
 
-        [Required]
+        [RegularExpression(@"^[0-9]+$")]
         [JsonProperty("quantity")]
         public int Quantity { get; set; }
 
-        [Required]
         [JsonProperty("visibility")]
         public bool Visibility { get; set; }
 

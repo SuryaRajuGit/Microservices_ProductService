@@ -5,9 +5,8 @@ using System.Threading.Tasks;
 
 namespace ProductService.Entity.Models
 {
-    public class Catalog
+    public class Catalog : BaseModel
     {
-        public Guid Id { get; set; }
 
         public string Name { get; set; }
 
