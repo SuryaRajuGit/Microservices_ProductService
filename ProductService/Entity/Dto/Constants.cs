@@ -23,5 +23,7 @@ namespace ProductService.Entity.Dto
 
         public const string Product = "product";
 
+        public const string Id = "id";
+
     }
 }

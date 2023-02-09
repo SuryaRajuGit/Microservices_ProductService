@@ -11,23 +11,23 @@ namespace ProductService.Contracts
     {
         public string IsProductExists(List<string> names);
 
-        public Guid? IsCatelogIdexists(ProductDTO productDTOs);
+        public bool IsCatelogIdexists(ProductDTO productDTOs);
 
         public void SaveProduct(List<Product> product) ;
 
-        public Tuple<string, Guid> IsProductExists(Guid id,Guid categoryId);
+        public bool IsProductExists(Guid id);
 
-        public Product GetProduct(Guid id,Guid categoryId);
+        public Product GetProduct(Guid id);
 
-        public bool UpdateProduct(UpdateProductDTO product, Guid CategoryId);
+        public bool UpdateProduct(UpdateProductDTO product,Guid id);
 
-        public bool IsProductNameExists(UpdateProductDTO product);
+        public bool IsProductNameExists(UpdateProductDTO product,Guid id);
 
         public Tuple<string, string> IsExists(CatalogDTO catalogDTO);
 
         public void SaveCatalog(Catalog catalogs);
 
-        public Tuple<string,string> GetProductCount(Guid id,Guid categoryId);
+        public Tuple<string, string> GetProductCount(Guid id);
 
         public bool IsProductExist(Guid id);
 
@@ -58,5 +58,7 @@ namespace ProductService.Contracts
         public List<Product> GetWishListProductDetails(List<Guid> productIds);
 
         public Catalog GetCatalogDetails(Guid id);
+
+        public List<CategoryNamesResponseDTO> GetCategoryNamesList();
     }
 }

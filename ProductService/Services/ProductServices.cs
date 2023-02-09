@@ -9,6 +9,8 @@ using ProductService.Entity.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Text;
 
 namespace ProductService.Services
 {
@@ -31,11 +33,28 @@ namespace ProductService.Services
         {
             return new ErrorDTO
             {
-                type = ModelState.Keys.FirstOrDefault(),
-                description = ModelState.Values.Select(src => src.Errors.Select(src => src.ErrorMessage).FirstOrDefault()).FirstOrDefault()
+                type = "BadRequest",
+                message = ModelState.Values.Select(src => src.Errors.Select(src => src.ErrorMessage).FirstOrDefault()).FirstOrDefault(),
+                statusCode="400"
             };
         }
+        public ErrorDTO IsQuantityNotNull(CatalogDTO catalog)
+        {
+            List<CategoryDTOcatalog> category = catalog.Category.ToList();
+            foreach (CategoryDTOcatalog item in category)
+            {
+                List<CategoryDTO> product = item.Products.ToList();
+                foreach (CategoryDTO term in product)
+                {
+                    if(term.Quantity == 0)
+                    {
+                        return new ErrorDTO() { type = "BadRequest", message = "Quantity is required",statusCode="400" };
+                    }
+                }
 
+            }
+            return null;
+        }
         ///<summary>
         /// Checks if the product exists
         ///</summary>
@@ -46,7 +65,7 @@ namespace ProductService.Services
             string names = _productRepository.IsProductExists(nameList);
             if (names != null)
             {
-                return new ErrorDTO { type = "Product", description = names + "Product already exists" };
+                return new ErrorDTO { type = "Conflict", message = names + "Product already exists",statusCode="409" };
             }
             return null;
         }
@@ -54,12 +73,12 @@ namespace ProductService.Services
         /// Checks if the catalog id exists
         ///</summary>
         ///<return>ErrorDTO</return>
-        public ErrorDTO IsCatelogIdexists(ProductDTO product)
+        public ErrorDTO IsCategoryIdExists(ProductDTO product)
         {
-            Guid? id = _productRepository.IsCatelogIdexists(product);
-            if (id != null)
+            bool isExist = _productRepository.IsCatelogIdexists(product);
+            if (!isExist)
             {
-                return new ErrorDTO { type = "Catalog", description ="Catalog with id not found" };
+                return new ErrorDTO { type = "NotFound", message = "Category id not found",statusCode="404" };
             }
             return null;
         }
@@ -67,46 +86,38 @@ namespace ProductService.Services
         /// Saves Product 
         ///</summary>
         ///<return>List<SaveProductResponse></return>
-        public List<SaveProductResponse> SaveProduct(ProductDTO productDTO)
+        public void SaveProduct(ProductDTO productDTO)
         {
-            Guid userId = Guid.Parse(_context.HttpContext.User.Claims.First(i => i.Type == "Id").Value);
+          
+            Guid userId = Guid.Parse(_context.HttpContext.User.Claims.First(i => i.Type == Constants.Id).Value);
             List<Product> products = new List<Product>();
-            List<SaveProductResponse> response = new List<SaveProductResponse>();
+            
             foreach (CategoryDTO item in productDTO.Product)
             {
                 item.Quantity = item.Quantity == 0 ? 1 : item.Quantity;
+                item.Visibility = item.Visibility == null ? false : true;
                 Product product1 = _mapper.Map<Product>(item);
                 Guid id = Guid.NewGuid();
                 product1.Id = id;
                 product1.CategoryId = productDTO.CategoryId;
                 product1.CreatedDate = DateTime.Now;
                 product1.CreatedBy = userId;
-                products.Add(product1);
-                SaveProductResponse saveProductResponse = new SaveProductResponse();
-                saveProductResponse.Id = id;
-                saveProductResponse.Name = item.Name;
-                response.Add(saveProductResponse);
+                product1.IsActive = true;
+                product1.Asset = item.Asset;
+                products.Add(product1);  
             }
             _productRepository.SaveProduct(products);
-            return response;
         }
         ///<summary>
         /// Checks if the product exits or not
         ///</summary>
         ///<return>ErrorDTO</return>
-        public ErrorDTO IsProductExists(Guid id, Guid categoryId)
+        public ErrorDTO IsProductExists(Guid id)
         {
-            Tuple<string, Guid> isProductExists = _productRepository.IsProductExists(id, categoryId);
-            if (isProductExists.Item1 != string.Empty)
+            bool isProductExist = _productRepository.IsProductExists(id);
+            if(!isProductExist)
             {
-                if (isProductExists.Item1 == Constants.CategoryId)
-                {
-                    return new ErrorDTO { type = "Category", description = "categoryId " + isProductExists.Item2 + " not found" };
-                }
-                else
-                {
-                    return new ErrorDTO { type = "Product", description = "product with id " + isProductExists.Item2 + " not found" };
-                }
+                return new ErrorDTO() {type="Not Found",message="Product id not found",statusCode="404" };
             }
             return null;
         }
@@ -115,15 +126,10 @@ namespace ProductService.Services
         /// Gets product details
         ///</summary>
         ///<return>ProductResponseDTO</return>
-        public ProductResponseDTO GetProduct(Guid id, Guid categoryId)
+        public ProductResponseDTO GetProduct(Guid id)
         {
-            Product product = _productRepository.GetProduct(id, categoryId);
-            product.Category = null;
-            //  product.CategoryId = null;
-            ProductResponseDTO productResponseDTO = new ProductResponseDTO();
-
+            Product product = _productRepository.GetProduct(id);
             ProductResponseDTO product1 = _mapper.Map<ProductResponseDTO>(product);
-            product1.Asset = null;
 
             return product1;
         }
@@ -132,29 +138,27 @@ namespace ProductService.Services
         /// Updates product details
         ///</summary>
         ///<return>ErrorDTO</return>
-        public ErrorDTO UpdateProduct(UpdateProductDTO product)
+        public ErrorDTO UpdateProduct(UpdateProductDTO product,Guid id)
         {
         
-            Product product2 = _mapper.Map<Product>(product);
-            product2.Asset = null;
-            bool isProductExist = _productRepository.UpdateProduct(product, product.CategoryId);
+            bool isProductExist = _productRepository.UpdateProduct(product,id);
             if (isProductExist)
             {
                 return null;
             }
-            return new ErrorDTO { type = "Product", description = "Product Id not found" };
+            return new ErrorDTO { type = "NotFound", message = "Product Id not found",statusCode="404" };
         }
 
         ///<summary>
         /// Check product name exists or not
         ///</summary>
         ///<return>ErrorDTO</return>
-        public ErrorDTO IsProductNameExists(UpdateProductDTO product)
+        public ErrorDTO IsProductNameExists(UpdateProductDTO product,Guid id)
         {
-            bool isProductExist = _productRepository.IsProductNameExists(product);
+            bool isProductExist = _productRepository.IsProductNameExists(product, id);
             if (isProductExist)
             {
-                return new ErrorDTO { type = "Product", description = "Product with name already exists" };
+                return new ErrorDTO { type = "Conflict", message = "Product with name already exists",statusCode="409" };
             }
             return null;
         }
@@ -168,9 +172,9 @@ namespace ProductService.Services
             switch (response.Item1)
             {
                 case Constants.Catalog:
-                    return new ErrorDTO { type = "Catalog", description = $"Catalog with name {response.Item2} already exists" };
+                    return new ErrorDTO { type = "Conflict", message = $"Catalog with name {response.Item2} already exists",statusCode="409" };
                 case Constants.Category:
-                    return new ErrorDTO { type = "Category", description = $"Category with name {response.Item2} already exists" };
+                    return new ErrorDTO { type = "Conflict", message = $"Category with name {response.Item2} already exists",statusCode="409" };
                 default:
                     return null;
             }
@@ -191,16 +195,20 @@ namespace ProductService.Services
                      Id = Guid.NewGuid(),
                      CatalogId = catalogId,
                      Name = term.Name,
+                     IsActive = true,
+                     CreatedDate = DateTime.Now,
                      Products = term.Products.Select(item =>
-                        new Product() 
+                        new Product()
                         {
                             Id = Guid.NewGuid(),
                             Price = item.Price,
                             Description = item.Description,
                             Quantity = item.Quantity,
-                            Visibility = item.Visibility,
+                            Visibility = item.Visibility == null ? true : false,
                             Asset = item.Asset,
                             Name = item.Name,
+                            CreatedDate =DateTime.Now,
+                            IsActive=true
                         }
                         ).ToList()
                  }).ToList(),
@@ -229,18 +237,15 @@ namespace ProductService.Services
         /// Gets product quantity 
         ///</summary>
         ///<return>string</return>
-        public string GetProductQuantity(Guid id, Guid categoryId)
+        public string GetProductQuantity(Guid id)
         {
-            Tuple<string, string> response = _productRepository.GetProductCount(id, categoryId);
-            switch (response.Item1)
+            Tuple<string, string> response = _productRepository.GetProductCount(id);
+            if(response == null)
             {
-                case Constants.Category:
-                    return JsonConvert.SerializeObject(new QuantityResponse { type = "category", description = $"Category id {response.Item2}  not found" });
-                case Constants.Product:
-                    return JsonConvert.SerializeObject(new QuantityResponse { type = "product", description = $"product id {response.Item2} not found" });
-                default:
-                    return JsonConvert.SerializeObject(new QuantityResponse() { type = response.Item1, description = response.Item2 });
+                return JsonConvert.SerializeObject(new QuantityResponse { type = "product", description = $"product id {response.Item2} not found" });
             }
+            return JsonConvert.SerializeObject(new QuantityResponse() { type = response.Item1, description = response.Item2 });
+            
         }
         ///<summary>
         /// Updates purchased product details in the inventory
@@ -259,7 +264,7 @@ namespace ProductService.Services
             bool isProductExist = _productRepository.IsProductExist(id);
             if (!isProductExist)
             {
-                return new ErrorDTO { type = "NoFound", description = "Product with id not found" };
+                return new ErrorDTO { type = "NoFound", message = "Product with id not found",statusCode="404" };
             }
             return null;
         }
@@ -287,9 +292,9 @@ namespace ProductService.Services
             switch (isCategoryIdExist.Item1)
             {
                 case Constants.Catalog:
-                    return new ErrorDTO { type = "Catalog", description = $"Catalog {isCategoryIdExist.Item2} id not found" };
+                    return new ErrorDTO { type = "Conflict", message = $"Catalog {isCategoryIdExist.Item2} id not found",statusCode="404" };
                 case Constants.Category:
-                    return new ErrorDTO { type = "Category", description = $"Category {isCategoryIdExist.Item2}id not found" };
+                    return new ErrorDTO { type = "Conflict", message = $"Category {isCategoryIdExist.Item2}id not found",statusCode="404" };
                 default:
                     return null;
             }
@@ -305,7 +310,6 @@ namespace ProductService.Services
             foreach (Product item in products)
             { 
                 ProductResponseDTO product2 = _mapper.Map<ProductResponseDTO>(item);
-                product2.Asset = null;
             
             productList.Add(product2);
             }
@@ -368,7 +372,7 @@ namespace ProductService.Services
             bool isProductExist = _productRepository.DeleteProduct(id);
             if (isProductExist == false)
             {
-                return new ErrorDTO() { type = "Product", description = "Product with id not found" };
+                return new ErrorDTO() { type = "NotFound", message = "Product with id not found",statusCode="404" };
             }
             return null;
         }
@@ -381,7 +385,7 @@ namespace ProductService.Services
         {
             if (name == null && (catalogId == Guid.Empty || categoryId == Guid.Empty)) 
             {
-                return new ErrorDTO() { type = "Bad request", description = "catalog id and category id should not be empty" };
+                return new ErrorDTO() { type = "Bad request", message = "catalog id and category id should not be empty" , statusCode = "404" };
             }
             return null;
         }
@@ -434,20 +438,17 @@ namespace ProductService.Services
                 if(item.Name != null || item.Visibility )
                 {
                     CartResponseDTO cartResponseDTO = _mapper.Map<CartResponseDTO>(item);
-                    cartResponseDTO.Asset = null;
                     response.Add(cartResponseDTO);
                 }
                 else if(item.Name !=null &&  !item.Visibility)
                 {
                     CartResponseDTO cartResponseDTO = _mapper.Map<CartResponseDTO>(item);
-                    cartResponseDTO.Asset = null;
                     cartResponseDTO.Quantity = 0;
                     response.Add(cartResponseDTO);
                 }
                 else
                 {
                     CartResponseDTO cartResponseDTO = _mapper.Map<CartResponseDTO>(item);
-                    cartResponseDTO.Asset = null;
                     cartResponseDTO.Quantity = -1;
                     response.Add(cartResponseDTO);
                 }
@@ -476,14 +477,12 @@ namespace ProductService.Services
                 {
                     CartResponseDTO cart = _mapper.Map<CartResponseDTO>(item);
                     cart.Quantity = -1;
-                    cart.Asset = null;
                     productDetails.Add(cart);
                 }
                 else
                 {
                     CartResponseDTO cart = _mapper.Map<CartResponseDTO>(item);
                     cart.Quantity = 1;
-                    cart.Asset = null;
                     productDetails.Add(cart);
                 }
                 
@@ -502,7 +501,7 @@ namespace ProductService.Services
                 return null;
             }
             List<GetCatalogResponseDTO> getCatalogResponseDTOs = new List<GetCatalogResponseDTO>();
-            foreach (Category item in catalog.Category)
+            foreach (Category item in catalog.Category.Where(sel => sel.IsActive))
             {
                 GetCatalogResponseDTO getCatalogResponseDTO = new GetCatalogResponseDTO()
                 {
@@ -510,15 +509,31 @@ namespace ProductService.Services
                     CategoryName=item.Name,
                     Product = new List<ProductResponseDTO>()
                 };
-                foreach (Product each in item.Products)
+                foreach (Product each in item.Products.Where(sel=>sel.IsActive))
                 {
                     ProductResponseDTO productResponseDTO1 = _mapper.Map<ProductResponseDTO>(each);
-                    productResponseDTO1.Asset = null;
                     getCatalogResponseDTO.Product.Add(productResponseDTO1);
                 }
                 getCatalogResponseDTOs.Add(getCatalogResponseDTO);
             }
             return getCatalogResponseDTOs;
+        }
+        public ErrorDTO IsProductQuantityNotNull(int quantity)
+        {
+            if(quantity == 0)
+            {
+                return new ErrorDTO() {type="BadRequest",message ="Product Quantity required",statusCode="400" };
+            }
+            return null;
+        }
+        public List<CategoryNamesResponseDTO> GetCategoryNames()
+        {
+            List<CategoryNamesResponseDTO> response = _productRepository.GetCategoryNamesList();
+            if(response.Count() == 0)
+            {
+                return null;
+            }
+            return response;
         }
     }
     

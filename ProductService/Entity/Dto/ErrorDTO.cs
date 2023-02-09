@@ -9,6 +9,8 @@ namespace ProductService.Entity.Dto
     {
         public string type { get; set; }
 
-        public string description { get; set; }
+        public string message { get; set; }
+
+        public string statusCode { get; set; }
     }
 }

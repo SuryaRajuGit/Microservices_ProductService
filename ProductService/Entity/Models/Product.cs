@@ -17,7 +17,7 @@ namespace ProductService.Entity.Models
 
         public bool Visibility { get; set; }
 
-        public byte[] Asset { get; set; }
+        public string Asset { get; set; }
 
         public string Name { get; set; }
 

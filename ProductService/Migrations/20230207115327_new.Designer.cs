@@ -10,7 +10,7 @@ using ProductService.Entity.Models;
 namespace ProductService.Migrations
 {
     [DbContext(typeof(ProductContext))]
-    [Migration("20230201064716_new")]
+    [Migration("20230207115327_new")]
     partial class @new
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -48,6 +48,18 @@ namespace ProductService.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Catalog");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("56ef95d7-2096-4a88-b0f7-82f4dbb6cc35"),
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IsActive = true,
+                            Name = "Groceries",
+                            UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            UpdatedBy = new Guid("00000000-0000-0000-0000-000000000000")
+                        });
                 });
 
             modelBuilder.Entity("ProductService.Entity.Models.Category", b =>
@@ -82,6 +94,19 @@ namespace ProductService.Migrations
                     b.HasIndex("CatalogId");
 
                     b.ToTable("Category");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("4944226f-36a7-445f-a9e5-d5c2ba1f525f"),
+                            CatalogId = new Guid("56ef95d7-2096-4a88-b0f7-82f4dbb6cc35"),
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IsActive = true,
+                            Name = "Vegetables",
+                            UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            UpdatedBy = new Guid("00000000-0000-0000-0000-000000000000")
+                        });
                 });
 
             modelBuilder.Entity("ProductService.Entity.Models.Product", b =>
@@ -90,8 +115,8 @@ namespace ProductService.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<byte[]>("Asset")
-                        .HasColumnType("varbinary(max)");
+                    b.Property<string>("Asset")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uniqueidentifier");
@@ -131,6 +156,23 @@ namespace ProductService.Migrations
                     b.HasIndex("CategoryId");
 
                     b.ToTable("Product");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("2a52169a-e58f-42e8-bc0e-4603c361c589"),
+                            CategoryId = new Guid("4944226f-36a7-445f-a9e5-d5c2ba1f525f"),
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Fresh potatos",
+                            IsActive = true,
+                            Name = "potatos",
+                            Price = 10f,
+                            Quantity = 10,
+                            UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            UpdatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            Visibility = true
+                        });
                 });
 
             modelBuilder.Entity("ProductService.Entity.Models.Category", b =>

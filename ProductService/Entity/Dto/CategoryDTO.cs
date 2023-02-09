@@ -14,16 +14,17 @@ namespace ProductService.Entity.Dto
         [JsonProperty(PropertyName = "price")]
         public float Price { get; set; }
 
+        [Required]
         [RegularExpression(@"^[0-9]+$")]
         [JsonProperty("quantity")]
         public int Quantity { get; set; }
 
         [JsonProperty("visibility")]
-        public bool Visibility { get; set; }
+        public bool? Visibility { get; set; }
 
-       
+        [RegularExpression(@"^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$")]
         [JsonProperty("asset")]
-        public byte[] Asset { get; set; }
+        public string? Asset { get; set; }
 
         [Required]
         [JsonProperty("name")]
@@ -31,7 +32,7 @@ namespace ProductService.Entity.Dto
 
         [Required]
         [JsonProperty("description")]
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
     }
 }

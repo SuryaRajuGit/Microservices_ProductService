@@ -27,37 +27,37 @@ namespace ProductService.Contracts
         /// Checks if the catalog id exists
         ///</summary>
         ///<return>ErrorDTO</return>
-        public ErrorDTO IsCatelogIdexists(ProductDTO product);
+        public ErrorDTO IsCategoryIdExists(ProductDTO product);
 
         ///<summary>
         /// Saves Product 
         ///</summary>
         ///<return>List<SaveProductResponse></return>
-        public List<SaveProductResponse> SaveProduct(ProductDTO product);
+        public void SaveProduct(ProductDTO product);
 
         ///<summary>
         /// Checks if the product exits or not
         ///</summary>
         ///<return>ErrorDTO</return>
-        public ErrorDTO IsProductExists(Guid id,Guid categoryId);
+        public ErrorDTO IsProductExists(Guid id);
 
         ///<summary>
         /// Gets product details
         ///</summary>
         ///<return>ProductResponseDTO</return>
-        public ProductResponseDTO GetProduct(Guid id,Guid categoryId);
+        public ProductResponseDTO GetProduct(Guid id);
 
         ///<summary>
         /// Updates product details
         ///</summary>
         ///<return>ErrorDTO</return>
-        public ErrorDTO UpdateProduct(UpdateProductDTO product);
+        public ErrorDTO UpdateProduct(UpdateProductDTO product,Guid id);
 
         ///<summary>
         /// Check product name exists or not
         ///</summary>
         ///<return>ErrorDTO</return>
-        public ErrorDTO IsProductNameExists(UpdateProductDTO updateProductDTO);
+        public ErrorDTO IsProductNameExists(UpdateProductDTO updateProductDTO,Guid id);
 
         ///<summary>
         /// Checks catalog name exists or not
@@ -75,7 +75,7 @@ namespace ProductService.Contracts
         /// Gets product quantity 
         ///</summary>
         ///<return>string</return>
-        public string GetProductQuantity(Guid id,Guid categoryId);
+        public string GetProductQuantity(Guid id);
 
         ///<summary>
         /// Checks product exist in the database or not
@@ -160,6 +160,13 @@ namespace ProductService.Contracts
         ///</summary>
         ///<return>List<GetCatalogResponseDTO></return>
         public List<GetCatalogResponseDTO> GetCatalog(Guid id);
+
+         
+        public ErrorDTO IsQuantityNotNull(CatalogDTO catalog);
+
+        public ErrorDTO IsProductQuantityNotNull(int quantity);
+
+        public List<CategoryNamesResponseDTO> GetCategoryNames();
 
     }
 }

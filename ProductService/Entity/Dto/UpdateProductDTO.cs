@@ -9,28 +9,21 @@ namespace ProductService.Entity.Dto
 {
     public class UpdateProductDTO
     {
-        [Required]
-        [JsonProperty("category_id")]
-        public Guid CategoryId { get; set; }
-
-        [Required]
-        [JsonProperty("id")]
-        public Guid Id { get; set; }
-
 
         [JsonProperty("name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
    
         [JsonProperty("description")]
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
+        [RegularExpression(@"^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$")]
         [JsonProperty("asset")]
-        public byte[] Asset { get; set; }
+        public string? Asset { get; set; }
 
         [RegularExpression(@"^[1-9][0-9]*$")]
         [JsonProperty(PropertyName = "price")]
-        public float Price { get; set; }
+        public float? Price { get; set; }
 
         [RegularExpression(@"^[0-9]+$")]
         [JsonProperty("quantity")]

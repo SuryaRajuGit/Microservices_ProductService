@@ -29,8 +29,9 @@ namespace ProductService.Entity.Dto
         public float Price { get; set; }
 
         [Required]
+        [RegularExpression(@"^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$")]
         [JsonProperty("asset")]
-        public byte[] Asset { get; set; }
+        public string? Asset { get; set; }
 
     }
 }

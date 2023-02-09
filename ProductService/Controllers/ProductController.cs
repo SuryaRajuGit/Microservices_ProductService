@@ -45,7 +45,7 @@ namespace ProductService.Controllers
             if(response == null)
             {
                 _logger.LogError("Catalog id not found");
-                return StatusCode(404, new ErrorDTO() {type="Catalog",description="Catalog id not found" });
+                return StatusCode(404, new ErrorDTO() {type="Catalog",message ="Catalog id not found",statusCode="404" });
             }
             return Ok(response);
         }
@@ -66,11 +66,11 @@ namespace ProductService.Controllers
                 ErrorDTO badRequest = _productServices.ModelStateInvalid(ModelState);
                 return BadRequest(badRequest);
             }
-            ErrorDTO iscatelogidexists = _productServices.IsCatelogIdexists(product);
-            if (iscatelogidexists != null)
+            ErrorDTO isCategoryIdExists = _productServices.IsCategoryIdExists(product);
+            if (isCategoryIdExists != null)
             {
-                _logger.LogError("Catalog id not found");
-                return NotFound(iscatelogidexists);
+                _logger.LogError("Category id not found");
+                return NotFound(isCategoryIdExists);
             }
             ErrorDTO isproductexists = _productServices.IsProductExists(product.Product.Select(item => item.Name));
             if (isproductexists != null)
@@ -78,8 +78,8 @@ namespace ProductService.Controllers
                 return StatusCode(409, isproductexists);
             }
             _logger.LogInformation("Product added to inventory successfully");
-            List < SaveProductResponse > response = _productServices.SaveProduct(product);
-            return StatusCode(201, response);
+            _productServices.SaveProduct(product);
+            return StatusCode(201,"Product added to inventory successfully");
         }
 
         ///<summary>
@@ -88,8 +88,8 @@ namespace ProductService.Controllers
         ///<return>ProductResponseDTO</return>
         [HttpGet]
         [Authorize(Roles = "User,Admin")]
-        [Route("api/product/{id}/category/{category-id}")]
-        public ActionResult<ProductResponseDTO> GetProduct([FromRoute(Name = "id")] Guid id, [FromRoute(Name = "category-id")] Guid categoryId )
+        [Route("api/product/{id}")]
+        public ActionResult<ProductResponseDTO> GetProduct([FromRoute(Name = "id")] Guid id)
         {
             _logger.LogInformation("Get single product started");
             if (!ModelState.IsValid)
@@ -98,14 +98,14 @@ namespace ProductService.Controllers
                 ErrorDTO badRequest = _productServices.ModelStateInvalid(ModelState);
                 return BadRequest(badRequest);
             }
-            ErrorDTO isProductExists = _productServices.IsProductExists(id, categoryId);
+            ErrorDTO isProductExists = _productServices.IsProductExists(id);
             if(isProductExists != null)
             {
                 _logger.LogError("Product id not found");
                 return StatusCode(404, isProductExists);
             }
             _logger.LogInformation("Product retrievd successfully");
-            ProductResponseDTO response = _productServices.GetProduct(id, categoryId);
+            ProductResponseDTO response = _productServices.GetProduct(id);
             return Ok(response);
         }
 
@@ -116,7 +116,7 @@ namespace ProductService.Controllers
         [HttpPut]
         [Authorize(Roles = "Admin")]
         [Route("/api/admin/product")]
-        public IActionResult UpdateProductDetails([FromBody] UpdateProductDTO product)
+        public IActionResult UpdateProductDetails([FromBody] UpdateProductDTO product,[FromRoute] Guid id)
         {
 
             _logger.LogInformation("Update product details started");
@@ -127,13 +127,13 @@ namespace ProductService.Controllers
                 return BadRequest(badRequest);
             }
            
-            ErrorDTO isProductNameExists = _productServices.IsProductNameExists(product);
+            ErrorDTO isProductNameExists = _productServices.IsProductNameExists(product,id);
             if(isProductNameExists != null)
             {
                 return StatusCode(409, isProductNameExists);
             }
 
-            ErrorDTO updateProduct = _productServices.UpdateProduct(product);
+            ErrorDTO updateProduct = _productServices.UpdateProduct(product,id);
             if (updateProduct != null)
             {
                 _logger.LogError("Product id not found");
@@ -159,6 +159,11 @@ namespace ProductService.Controllers
                 ErrorDTO badRequest = _productServices.ModelStateInvalid(ModelState);
                 return BadRequest(badRequest);
             }
+            ErrorDTO isQuantity = _productServices.IsQuantityNotNull(catalogDTO);
+            if(isQuantity != null)
+            {
+                return StatusCode(400, new ErrorDTO() {type="BadRequest",message="Product quantity required",statusCode="400" });
+            }
             ErrorDTO isCatalogNameExists = _productServices.IsCatalogNameExists(catalogDTO);
             if(isCatalogNameExists != null)
             {
@@ -176,10 +181,10 @@ namespace ProductService.Controllers
         [HttpGet]
         [Authorize(Roles = "Admin,User")]
         [Route("api/product/ocelot")]
-        public string IsProductExistsInventory([FromQuery]Guid id,[FromQuery] Guid categoryId )
+        public string IsProductExistsInventory([FromQuery]Guid id)
         {
             _logger.LogInformation("IsProductExistsInventory started");
-            return _productServices.GetProductQuantity(id, categoryId);
+            return _productServices.GetProductQuantity(id);
         }
 
         ///<summary>
@@ -280,6 +285,7 @@ namespace ProductService.Controllers
         /// Checks product details
         ///</summary>
         ///<return>List<ProductResponseDTO> </return>
+        
         [HttpGet]
         [Authorize(Roles = "Admin,User")]
         [Route("api/products")]
@@ -344,6 +350,19 @@ namespace ProductService.Controllers
         {
             _logger.LogInformation("GetWishListProductDetails started");
             return _productServices.GetWishListProductDetails(productIds);
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Admin,User")]
+        [Route("/api/category/names")]
+        public ActionResult<List<CategoryNamesResponseDTO>> GetCategoryNames()
+        {
+            List<CategoryNamesResponseDTO> names = _productServices.GetCategoryNames();
+            if (names != null)
+            {
+                return Ok(names);
+            }
+            return StatusCode(204);
         }
     }
 }

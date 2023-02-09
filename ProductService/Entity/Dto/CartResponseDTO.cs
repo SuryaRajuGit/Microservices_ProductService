@@ -18,7 +18,7 @@ namespace ProductService.Entity.Dto
         public int Quantity { get; set; }
 
         [JsonProperty("asset")]
-        public byte[] Asset { get; set; }
+        public string? Asset { get; set; }
 
         [JsonProperty("name")]
         public string Name { get; set; }
