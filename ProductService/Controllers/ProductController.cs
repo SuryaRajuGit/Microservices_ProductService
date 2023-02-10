@@ -326,6 +326,14 @@ namespace ProductService.Controllers
             return _productServices.GetProductPrice(id);
         }
 
+        [HttpPost]
+        [Authorize(Roles = "Admin,User")]
+        [Route("api/bill/product/details")]
+        public List<ProductBillResponseDTO> GetBillProductDetails([FromBody] List<BillProductDTO> productIds)
+        {
+            _logger.LogInformation("Get ProductDetails started");
+           return _productServices.GetBillProductDetails(productIds);
+        }
         ///<summary>
         /// Gets cart product details
         ///</summary>

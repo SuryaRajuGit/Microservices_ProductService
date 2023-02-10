@@ -154,7 +154,33 @@ namespace ProductService.Repository
             _productContext.Catalog.Add(catalogs);
             _productContext.SaveChanges();
         }
-
+        public List<ProductBillResponseDTO> GetProductDetails(List<BillProductDTO> ids)
+        {
+            List<ProductBillResponseDTO> list1 = new List<ProductBillResponseDTO>();
+            foreach (BillProductDTO item in ids)
+            {
+                ProductBillResponseDTO list = new ProductBillResponseDTO();
+                list.Products = new List<ProductDetailsDto>();
+                list.BillId = item.BillId;
+                foreach (Guid term in item.ProductIds)
+                {
+                    Product product = _productContext.Product.Where(sel => sel.Id == term && sel.IsActive).FirstOrDefault();
+                    if (product != null)
+                    {
+                        ProductDetailsDto product1 = new ProductDetailsDto()
+                        {
+                            Id=product.Id,
+                            Asset=product.Asset,
+                            Description=product.Description,
+                            Name=product.Name
+                        };
+                        list.Products.Add(product1);
+                    }
+                }
+                list1.Add(list);
+            }
+            return list1;
+        }
         ///<summary>
         /// Updates product quantity of product in inventory
         ///</summary>

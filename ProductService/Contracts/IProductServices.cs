@@ -168,5 +168,7 @@ namespace ProductService.Contracts
 
         public List<CategoryNamesResponseDTO> GetCategoryNames();
 
+        public List<ProductBillResponseDTO> GetBillProductDetails(List<BillProductDTO> ids);
+
     }
 }

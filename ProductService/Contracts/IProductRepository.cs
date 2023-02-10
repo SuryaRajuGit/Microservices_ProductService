@@ -60,5 +60,7 @@ namespace ProductService.Contracts
         public Catalog GetCatalogDetails(Guid id);
 
         public List<CategoryNamesResponseDTO> GetCategoryNamesList();
+
+        public List<ProductBillResponseDTO> GetProductDetails(List<BillProductDTO> ids);
     }
 }

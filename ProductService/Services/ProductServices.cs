@@ -535,6 +535,10 @@ namespace ProductService.Services
             }
             return response;
         }
+        public List<ProductBillResponseDTO> GetBillProductDetails(List<BillProductDTO> ids)
+        {
+            return  _productRepository.GetProductDetails(ids);
+        }
     }
     
 }

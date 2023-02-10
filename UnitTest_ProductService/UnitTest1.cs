@@ -46,7 +46,7 @@ namespace UnitTest_ProductService
             {
                 loggingBuilder.AddConsole((options) =>
                 {
-                    options.IncludeScopes = true; //AddAuthentication
+                    options.IncludeScopes = true;
                 });
             });
             IHost host = hostBuilder.Build();
@@ -58,19 +58,16 @@ namespace UnitTest_ProductService
             });
 
 
-            // need to have access to the context
             Claim claim = new Claim("role", "Admin");
             Claim claim1 = new Claim("Id", "8d0c1df7-a887-4453-8af3-799e4a7ed013");
-            ClaimsIdentity identity = new ClaimsIdentity(new[] { claim, claim1 }, "BasicAuthentication"); // this uses basic auth
-            ClaimsPrincipal contextUser = new ClaimsPrincipal(identity); //add claims as needed
-
-            //...then set user and other required properties on the httpContext as needed
+            ClaimsIdentity identity = new ClaimsIdentity(new[] { claim, claim1 }, "BasicAuthentication"); 
+            ClaimsPrincipal contextUser = new ClaimsPrincipal(identity);
+          
             DefaultHttpContext httpContext = new DefaultHttpContext()
             {
                 User = contextUser
             };
 
-            //Controller needs a controller context to access HttpContext
             HttpContextAccessor _httpContextAccessor = new HttpContextAccessor()
             {
                 HttpContext = httpContext
@@ -93,7 +90,7 @@ namespace UnitTest_ProductService
         }
         public void AddData()
         {
-            string path = @"C:\Users\Hp\source\repos\ProductService\ProductService\Entity\Files\Products.csv";
+            string path = @"..\..\..\..\..\ProductService\ProductService\Entity\Files\Products.csv";
             string ReadCSV = File.ReadAllText(path);
             string[] data = ReadCSV.Split('\r');
          
@@ -164,8 +161,8 @@ namespace UnitTest_ProductService
         [Fact]
         public void GetProduct_Test()
         {
-            ActionResult response = _productController.GetProduct(Guid.Parse("2a52169a-e58f-42e8-bc0e-4603c361c589"),
-                Guid.Parse("4944226f-36a7-445f-a9e5-d5c2ba1f525f")).Result;
+            ActionResult response = _productController.GetProduct(Guid.Parse("2a52169a-e58f-42e8-bc0e-4603c361c589")
+               ).Result;
             OkObjectResult result = Assert.IsType<OkObjectResult>(response);
 
             Assert.Equal(200, result.StatusCode);
@@ -177,7 +174,6 @@ namespace UnitTest_ProductService
             UpdateProductDTO product = new UpdateProductDTO()
             {
                 Name = "Test ",
-                Id = Guid.Parse("2a52169a-e58f-42e8-bc0e-4603c361c589"),
                 Asset = null,
                 Description = "ss",
                 Price = 10,
@@ -187,7 +183,6 @@ namespace UnitTest_ProductService
             UpdateProductDTO product1 = new UpdateProductDTO()
             {
                 Name = "Test ",
-                Id = Guid.Parse("3a52169a-e58f-42e8-bc0e-4603c361c589"),
                 Asset = null,
                 Description = "ss",
                 Price = 10,
@@ -198,7 +193,6 @@ namespace UnitTest_ProductService
             UpdateProductDTO product2 = new UpdateProductDTO()
             {
                 Name = "Test 1",
-                Id = Guid.Parse("3a52169a-e58f-42e8-bc0e-4603c361c588"),
                 Asset = null,
                 Description = "ss",
                 Price = 10,
@@ -206,9 +200,9 @@ namespace UnitTest_ProductService
                 Visibility = true
 
             };
-            IActionResult response = _productController.UpdateProductDetails(product);
-            IActionResult response1 = _productController.UpdateProductDetails(product1);
-            IActionResult response2 = _productController.UpdateProductDetails(product2);
+            IActionResult response = _productController.UpdateProductDetails(product, Guid.Parse("2a52169a-e58f-42e8-bc0e-4603c361c589"));
+            IActionResult response1 = _productController.UpdateProductDetails(product1, Guid.Parse("3a52169a-e58f-42e8-bc0e-4603c361c589"));
+            IActionResult response2 = _productController.UpdateProductDetails(product2, Guid.Parse("3a52169a-e58f-42e8-bc0e-4603c361c588"));
 
             OkObjectResult result = Assert.IsType<OkObjectResult>(response);
             ObjectResult result1 = Assert.IsType<ObjectResult>(response1);
@@ -268,8 +262,8 @@ namespace UnitTest_ProductService
         [Fact]
         public void IsProductExistsInventory_Test()
         {
-            string response = _productController.IsProductExistsInventory(Guid.Parse("2a52169a-e58f-42e8-bc0e-4603c361c589"),
-                Guid.Parse("4944226f-36a7-445f-a9e5-d5c2ba1f525f"));
+            string response = _productController.IsProductExistsInventory(Guid.Parse("2a52169a-e58f-42e8-bc0e-4603c361c589")
+         );
 
             Assert.IsType<string>(response);
         

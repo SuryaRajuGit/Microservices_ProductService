@@ -20,6 +20,8 @@ namespace ProductService.Helpers
             CreateMap<ProductResponseDTO, Product>().ReverseMap();
             CreateMap<CartResponseDTO,Product>().ReverseMap();
             CreateMap<UpdateProductDTO,Product >().ReverseMap();
+
+            CreateMap<ProductDetailsDto, Product>().ReverseMap();
         }
         
     }
